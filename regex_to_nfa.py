@@ -129,7 +129,7 @@ def draw_nfa(nfa, title=""):
     state_name = {}
     i = 0
     for state in nfa["states"]:
-        state_name[state] = "q{}".format(i)
+        state_name[state] = "q{}".format(i).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
         i+=1
 
     g = Digraph()
@@ -156,7 +156,7 @@ def draw_nfa(nfa, title=""):
     for state in nfa["states"]:
         for character in nfa["transition_function"][state]:
             for transition_state in nfa["transition_function"][state][character]:
-                g.edge(state_name[state], state_name[transition_state], label= character if character != "E" else "ε")
+                g.edge(state_name[state], state_name[transition_state], label= character if character != "E" else "\u03B5")
 
     g.view(tempfile.mktemp('.gv'))  
 
