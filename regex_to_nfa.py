@@ -1,5 +1,7 @@
 from regex_to_postfix import regex_to_postfix, is_alphabet
 import uuid
+from graphviz import Digraph
+import tempfile
 
 def get_alphabet_nfa(character):
     nfa = {}
@@ -123,6 +125,20 @@ def regex_to_nfa(reg_exp):
     nfa = nfa_stack.pop()
     return nfa
 
+def draw_nfa(nfa):
+    g = Digraph()
+    g.attr(rankdir='LR')
+    g.attr('node', shape='doublecircle')
+    for state in nfa['final_states']:
+        g.node(str(state))
+    g.attr('node', shape='circle')
+    for state in nfa["states"]:
+        for character in nfa["transition_function"][state]:
+            for transition_state in nfa["transition_function"][state][character]:
+                g.edge(str(state), str(transition_state), label= character)
+    # mark goal states
+
+    g.view(tempfile.mktemp('.gv'))  
 
 if __name__ == "__main__":
     reg_exp = "a(a+b)*b"
@@ -136,3 +152,5 @@ if __name__ == "__main__":
     print()
     for state in nfa["transition_function"].keys():
         print(state,nfa["transition_function"][state])
+    print()
+    draw_nfa(nfa)
