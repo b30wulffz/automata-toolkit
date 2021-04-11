@@ -1,9 +1,6 @@
 from regex_to_postfix import regex_to_postfix, is_alphabet
 import uuid
 
-{"states": [], "initial_state": '', "final_states": [], "transition_function": { 'a': { 'q1': ['q2'], 'q2': ['q3'] } }}
-
-
 def get_alphabet_nfa(character):
     nfa = {}
     nfa["states"] = [uuid.uuid4(), uuid.uuid4()]
