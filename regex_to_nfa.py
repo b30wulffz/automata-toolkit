@@ -125,9 +125,14 @@ def regex_to_nfa(reg_exp):
     nfa = nfa_stack.pop()
     return nfa
 
-def draw_nfa(nfa):
+def draw_nfa(nfa, title=""):
     g = Digraph()
     g.attr(rankdir='LR')
+    if title == "":
+        title = r'\n\nNFA'
+    else:
+        title = r'\n\nNFA : '+title
+    g.attr(label=title, fontsize='30')
 
     # mark goal states
     g.attr('node', shape='doublecircle')
@@ -161,4 +166,4 @@ if __name__ == "__main__":
     for state in nfa["transition_function"].keys():
         print(state,nfa["transition_function"][state])
     print()
-    draw_nfa(nfa)
+    draw_nfa(nfa, reg_exp)
