@@ -63,7 +63,8 @@ def nfa_to_dfa(nfa):
     dfa["reachable_states"] = []
     while len(state_stack) > 0:
         current_state = state_stack.pop(0)
-        dfa["reachable_states"].append(current_state)
+        if current_state not in dfa["reachable_states"]:
+            dfa["reachable_states"].append(current_state)
         for alphabet in dfa["alphabets"]:
             next_state = dfa["transition_function"][current_state][alphabet]
             if next_state not in dfa["reachable_states"]:
@@ -78,9 +79,9 @@ def draw_dfa(dfa, title=""):
     i = 0
     for state in dfa["reachable_states"]:
         if state == "phi":
-            state_name[state] = "phi"
+            state_name[state] = "\u03A6"
         else:
-            state_name[state] = "q{}".format(i)
+            state_name[state] = "q{}".format(i).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
             i+=1
 
     g = Digraph()
@@ -107,7 +108,6 @@ def draw_dfa(dfa, title=""):
     for state in dfa["reachable_states"]:
         for character in dfa["transition_function"][state].keys():
             transition_state = dfa["transition_function"][state][character]
-            # print(transition_state)
             g.edge(state_name[state], state_name[transition_state], label= character)
 
     g.view(tempfile.mktemp('.gv'))  
@@ -115,9 +115,7 @@ def draw_dfa(dfa, title=""):
 
 if __name__ == "__main__":
     reg_exp = "a(a+b)*b"
-    # reg_exp = "ab"
     nfa = regex_to_nfa(reg_exp)
-    # print(len(nfa["states"]))
     dfa = nfa_to_dfa(nfa)
     
     print()
@@ -131,4 +129,4 @@ if __name__ == "__main__":
         print(state,dfa["transition_function"][state])
     print()
 
-    draw_dfa(dfa)
+    draw_dfa(dfa, reg_exp)
