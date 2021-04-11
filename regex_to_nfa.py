@@ -126,8 +126,15 @@ def regex_to_nfa(reg_exp):
     return nfa
 
 def draw_nfa(nfa, title=""):
+    state_name = {}
+    i = 0
+    for state in nfa["states"]:
+        state_name[state] = "q{}".format(i)
+        i+=1
+
     g = Digraph()
     g.attr(rankdir='LR')
+
     if title == "":
         title = r'\n\nNFA'
     else:
@@ -137,19 +144,19 @@ def draw_nfa(nfa, title=""):
     # mark goal states
     g.attr('node', shape='doublecircle')
     for state in nfa['final_states']:
-        g.node(str(state))
+        g.node(state_name[state])
 
     # add an initial edge
     g.attr('node', shape='none')
     g.node("")
     
     g.attr('node', shape='circle')
-    g.edge("", str(nfa["initial_state"]))
+    g.edge("", state_name[nfa["initial_state"]])
 
     for state in nfa["states"]:
         for character in nfa["transition_function"][state]:
             for transition_state in nfa["transition_function"][state][character]:
-                g.edge(str(state), str(transition_state), label= character)
+                g.edge(state_name[state], state_name[transition_state], label= character if character != "E" else "ε")
 
     g.view(tempfile.mktemp('.gv'))  
 
