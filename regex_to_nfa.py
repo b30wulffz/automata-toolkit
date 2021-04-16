@@ -162,6 +162,8 @@ def draw_nfa(nfa, title=""):
 
 if __name__ == "__main__":
     reg_exp = "a(a+b)*b"
+    reg_exp = "(a+ab)(a*+b)"
+    # reg_exp = "(a+b)*"
     nfa = regex_to_nfa(reg_exp)
     print()
     print(nfa["states"])

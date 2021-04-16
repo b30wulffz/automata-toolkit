@@ -82,6 +82,8 @@ def nfa_to_dfa(nfa):
             if next_state not in dfa["reachable_states"]:
                 state_stack.append(next_state)
 
+    dfa["final_reachable_states"] = list(set(dfa["final_states"]) & set(dfa["reachable_states"]))
+
     return dfa
 
 def draw_dfa(dfa, title=""):
@@ -105,7 +107,8 @@ def draw_dfa(dfa, title=""):
 
     # mark goal states
     g.attr('node', shape='doublecircle')
-    for state in list(set(dfa["final_states"]) & set(dfa["reachable_states"])):
+    # for state in list(set(dfa["final_states"]) & set(dfa["reachable_states"])):
+    for state in dfa["final_reachable_states"]:
         g.node(state_name[state])
 
     # add an initial edge
