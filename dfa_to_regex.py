@@ -2,8 +2,6 @@ from regex_to_nfa import regex_to_nfa
 from nfa_to_dfa import nfa_to_dfa, draw_dfa
 from dfa_to_efficient_dfa import dfa_to_efficient_dfa
 import uuid
-import time
-
 
 def union_regex(a, b):
 
