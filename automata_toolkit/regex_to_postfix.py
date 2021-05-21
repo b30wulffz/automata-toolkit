@@ -1,4 +1,3 @@
-
 priority = {'*': 3, '?': 2, '+': 1}
 
 def is_alphabet(c):

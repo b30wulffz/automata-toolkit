@@ -1,5 +1,6 @@
-from regex_to_nfa import regex_to_nfa
-from nfa_to_dfa import nfa_to_dfa, draw_dfa
+from .regex_to_nfa import regex_to_nfa
+from .nfa_to_dfa import nfa_to_dfa
+from .visual_utils import draw_dfa
 
 def dfa_to_efficient_dfa(dfa):
     table = {}
@@ -23,18 +24,15 @@ def dfa_to_efficient_dfa(dfa):
     while True:
         for state_1 in dfa["reachable_states"]:
             for state_2 in dfa["reachable_states"]:
-                # transition when alphabet is a
-                if new_table[state_1][state_2] == 0:
-                    next_state_1 = dfa["transition_function"][state_1]["a"]
-                    next_state_2 = dfa["transition_function"][state_2]["a"]
-                    new_table[state_1][state_2] = table[next_state_1][next_state_2]
-                    new_table[state_2][state_1] = table[next_state_1][next_state_2]
-                # transition when alphabet is b
-                if new_table[state_1][state_2] == 0:
-                    next_state_1 = dfa["transition_function"][state_1]["b"]
-                    next_state_2 = dfa["transition_function"][state_2]["b"]
-                    new_table[state_1][state_2] = table[next_state_1][next_state_2]
-                    new_table[state_2][state_1] = table[next_state_1][next_state_2]
+                for alphabet in dfa["alphabets"]:
+                    # transition for an alphabet
+                    if new_table[state_1][state_2] == 0:
+                        next_state_1 = dfa["transition_function"][state_1][alphabet]
+                        next_state_2 = dfa["transition_function"][state_2][alphabet]
+                        new_table[state_1][state_2] = table[next_state_1][next_state_2]
+                        new_table[state_2][state_1] = table[next_state_1][next_state_2]
+                    else:
+                        break
 
         changed = False
         # check if something changed or not
@@ -49,75 +47,41 @@ def dfa_to_efficient_dfa(dfa):
     # implementing union find to merge
     parent = {}
     for state in dfa["reachable_states"]:
-        parent[state] = state
-    
-    def get_parent(current_state):
+        # parent[state] = state
+        parent[state] = {"value": state, "states": [state]}
+
+    def get_parent(current_state, all=False):
         parent_state = parent[current_state]
-        while parent_state != current_state:
-            current_state = parent_state
+        while parent_state["value"] != current_state:
+            current_state = parent_state["value"]
             parent_state = parent[current_state]
-        return parent_state
-    
+        if all:
+            return parent_state
+        else:
+            return tuple(parent_state["states"])
 
     for state_1 in dfa["reachable_states"]:
         for state_2 in dfa["reachable_states"]:
             if state_1 != state_2 and table[state_1][state_2] == 0:
                 # merge state 1 and 2
-                parent_state_1 = get_parent(state_1)
-                parent_state_2 = get_parent(state_2)
-                # if parent_state_1 != parent_state_2:
-                parent[parent_state_2] = parent_state_1
-                # print("------------")
-                # print(state_1)
-                # print(parent_state_1)
-                # print()
-                # print(state_2)
-                # print(parent_state_2)
-                # print("------------")
-                # for state in dfa["reachable_states"]:
-                #     print(state)
-                #     print(get_parent(state))
-                #     print()
-
-    
-
-    # state_name = {}
-    # i = 0
-    # for state in dfa["reachable_states"]:
-    #     if state == "phi":
-    #         state_name[state] = "\u03A6"
-    #     else:
-    #         state_name[state] = "q{}".format(i).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
-    #         i+=1
-
-    # for state_1 in dfa["reachable_states"]:
-    #     for state_2 in dfa["reachable_states"]:
-    #         print(state_name[state_1])
-    #         print(state_name[state_2])
-    #         print(table[state_1][state_2])
-    #         print()
-        
-    # print("-------")
-    # print()
-    # for state in dfa["reachable_states"]:
-    #     print(state)
-    #     print(get_parent(state))
-    #     print()
+                parent_state_1 = get_parent(state_1, all=True)
+                parent_state_2 = get_parent(state_2, all=True)
+                parent[parent_state_2["value"]]["value"] = parent_state_1["value"]
+                parent[parent_state_1["value"]]["states"] = list(set(parent_state_1["states"]) | set(parent_state_2["states"]))
 
     # now we can create our new dfa
     new_dfa = {}
     new_dfa["states"] = list(set([get_parent(state) for state in dfa["reachable_states"]]))
     new_dfa["initial_state"] = get_parent(dfa["initial_state"])
     new_dfa["final_states"] = list(set([get_parent(state) for state in dfa["final_reachable_states"]]))
-    new_dfa["alphabets"] = ["a", "b"]
+    # new_dfa["alphabets"] = ["a", "b"]
+    new_dfa["alphabets"] = dfa["alphabets"]
 
     new_dfa["transition_function"]= {}
     for state in new_dfa["states"]:
         new_dfa["transition_function"][state] = {}
         for alphabet in new_dfa["alphabets"]:
-            # print("----")
-            # print(dfa["transition_function"][state][alphabet])
-            new_dfa["transition_function"][state][alphabet] = get_parent(dfa["transition_function"][state][alphabet])
+            new_dfa["transition_function"][state][alphabet] = get_parent(dfa["transition_function"][state[0]][alphabet])
 
     # extras
     new_dfa["reachable_states"]  = new_dfa["states"]

@@ -1,8 +1,8 @@
-from regex_to_nfa import regex_to_nfa
+from .regex_to_nfa import regex_to_nfa
+from .visual_utils import draw_dfa
+from .consts import Consts
 import itertools
 from collections import Counter
-from graphviz import Digraph
-import tempfile
 
 def find_permutation(state_list, current_state):
     for state in state_list:
@@ -16,7 +16,7 @@ def get_epsilon_closure(nfa, dfa_states, state):
     while len(state_stack) > 0:
         current_state = state_stack.pop(0)
         closure_states.append(current_state)
-        alphabet = "E"
+        alphabet = Consts.EPSILON
         if nfa["transition_function"][current_state][alphabet] not in closure_states:
             state_stack.extend(nfa["transition_function"][current_state][alphabet])
     closure_states = tuple(set(closure_states))
@@ -43,7 +43,8 @@ def nfa_to_dfa(nfa):
                     dfa["final_states"].append(state)
                     break
 
-    dfa["alphabets"] = ["a", "b"]
+    # dfa["alphabets"] = ["a", "b"]
+    dfa["alphabets"] = list(filter(lambda x:x!=Consts.EPSILON, nfa["alphabets"]))
 
     dfa["transition_function"]= {}
     for state in dfa["states"]:
@@ -85,46 +86,6 @@ def nfa_to_dfa(nfa):
     dfa["final_reachable_states"] = list(set(dfa["final_states"]) & set(dfa["reachable_states"]))
 
     return dfa
-
-def draw_dfa(dfa, title=""):
-    state_name = {}
-    i = 0
-    for state in dfa["reachable_states"]:
-        if state == "phi":
-            state_name[state] = "\u03A6"
-        else:
-            state_name[state] = "q{}".format(i).translate(str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉"))
-            i+=1
-
-    g = Digraph()
-    g.attr(rankdir='LR')
-
-    if title == "":
-        title = r'\n\nDFA'
-    else:
-        title = r'\n\nDFA : '+title
-    g.attr(label=title, fontsize='30')
-
-    # mark goal states
-    g.attr('node', shape='doublecircle')
-    # for state in list(set(dfa["final_states"]) & set(dfa["reachable_states"])):
-    for state in dfa["final_reachable_states"]:
-        g.node(state_name[state])
-
-    # add an initial edge
-    g.attr('node', shape='none')
-    g.node("")
-    
-    g.attr('node', shape='circle')
-    g.edge("", state_name[dfa["initial_state"]])
-
-    for state in dfa["reachable_states"]:
-        for character in dfa["transition_function"][state].keys():
-            transition_state = dfa["transition_function"][state][character]
-            g.edge(state_name[state], state_name[transition_state], label= character)
-
-    g.view(tempfile.mktemp('.gv'))  
-
 
 if __name__ == "__main__":
     reg_exp = "a(a+b)*b"

@@ -1,0 +1,15 @@
+LICENSE.md
+README.md
+setup.py
+automata_toolkit/__init__.py
+automata_toolkit/consts.py
+automata_toolkit/dfa_to_efficient_dfa.py
+automata_toolkit/dfa_to_regex.py
+automata_toolkit/nfa_to_dfa.py
+automata_toolkit/regex_to_nfa.py
+automata_toolkit/regex_to_postfix.py
+automata_toolkit/visual_utils.py
+automata_toolkit.egg-info/PKG-INFO
+automata_toolkit.egg-info/SOURCES.txt
+automata_toolkit.egg-info/dependency_links.txt
+automata_toolkit.egg-info/top_level.txt

@@ -1,6 +1,8 @@
-from regex_to_nfa import regex_to_nfa
-from nfa_to_dfa import nfa_to_dfa, draw_dfa
-from dfa_to_efficient_dfa import dfa_to_efficient_dfa
+from .regex_to_nfa import regex_to_nfa
+from .nfa_to_dfa import nfa_to_dfa
+from .dfa_to_efficient_dfa import dfa_to_efficient_dfa
+from .visual_utils import draw_dfa
+from .consts import Consts
 import uuid
 
 def union_regex(a, b):
@@ -26,45 +28,33 @@ def union_regex(a, b):
             result.remove("")
         return result
     
-    # def combine(string):
-    #     return 
-
     split_a = split_into_unique(a)
     split_b = split_into_unique(b)
 
     merged = list(set(split_a) | set(split_b))
     return "+".join(merged)
 
-    # if a=="":
-    #     return b
-    # elif b == "":
-    #     return a
-    # if a=="E" and b=="E":
-    #     return "E"
-    # else:   
-    #     return "{}+{}".format(a,b)
-
 def concat_regex(a, b):
     if a=="" or b=="":
         return ""
-    elif a[len(a)-1]=="E":
+    elif a[len(a)-1]==Consts.EPSILON:
         return "{}{}".format(a[:-1], b)
-    elif b[0]=="E":
+    elif b[0]==Consts.EPSILON:
         return "{}{}".format(a, b[2:])
     else:
         return "{}{}".format(a, b)
 
 def cleene_star_regex(a):
-    if a == "E":
-        return "E"
+    if a == Consts.EPSILON:
+        return Consts.EPSILON
     elif a == "":
-        return "E"
+        return Consts.EPSILON
     else:
-        # print("-> ", a)
         return "{}*".format(bracket(a))
 
 def bracket(a):
-    if a in ["E", "", "a", "b"]:
+    # if a in [Consts.EPSILON, "", "a", "b"]:
+    if len(a) <= 1:
         return a
     else:
         return "({})".format(a)
@@ -80,16 +70,11 @@ def dfa_to_regex(dfa):
             return True
         else:
             visited.append(state)
-            res_a = False
-            res_b = False
-            next_state_a = dfa["transition_function"][state]["a"]
-            if next_state_a not in visited:
-                res_a = is_final(next_state_a, visited)
-            next_state_b = dfa["transition_function"][state]["b"]
-            if next_state_b not in visited:
-                res_b = is_final(next_state_b, visited)
-            if res_a == True or res_b == True:
-                return True
+            for alphabet in dfa["alphabets"]:
+                next_state = dfa["transition_function"][state][alphabet]
+                if next_state not in visited:
+                    if is_final(next_state, visited) == True:
+                        return True
         return False
 
     for state in dfa["reachable_states"]:
@@ -99,16 +84,19 @@ def dfa_to_regex(dfa):
     gnfa = {}
     gnfa["initial_state"] = uuid.uuid4()
     gnfa["final_states"] =  [uuid.uuid4()]
+    gnfa["initial_state"] = "P0"
+    gnfa["final_states"] =  ["P1"]
 
     gnfa["states"] = [gnfa["initial_state"]]
     gnfa["states"].extend(dfa["reachable_states"])
     gnfa["states"].extend(gnfa["final_states"])
 
-    gnfa["alphabets"] = ["a", "b", "E"]
+    gnfa["alphabets"] = list(set(dfa["alphabets"]) | set([Consts.EPSILON]))
+
 
     gnfa["transition_function"]= {}
     # attach initial state of gnfa to initial state of dfa with epsilon transition
-    gnfa["transition_function"][gnfa["initial_state"]] = {"E": dfa["initial_state"]}
+    gnfa["transition_function"][gnfa["initial_state"]] = {Consts.EPSILON: dfa["initial_state"]}
 
     # append rest of the transitions of dfa to gnfa
     for state in dfa["reachable_states"]:
@@ -121,7 +109,7 @@ def dfa_to_regex(dfa):
 
     # attach final states of dfs to final state of gnfa with epsilon transition
     for state in dfa["final_reachable_states"]:
-        gnfa["transition_function"][state]["E"] = gnfa["final_states"][0]
+        gnfa["transition_function"][state][Consts.EPSILON] = gnfa["final_states"][0]
 
     gnfa["transition_function"][gnfa["final_states"][0]] = {}
 
@@ -129,80 +117,63 @@ def dfa_to_regex(dfa):
     for state_1 in gnfa["states"]:
         L[state_1] = {}
         for state_2 in gnfa["states"]:
-            L[state_1][state_2] = ""
+            L[state_1][state_2] = []
         for alphabet, next_state in gnfa["transition_function"][state_1].items():
-            L[state_1][next_state] = union_regex(L[state_1][next_state], alphabet)
-    
+            L[state_1][next_state].append(alphabet)
     visited = []
-
-    # print("-----------------------")
-
-    # for chosen_state in gnfa["states"]:
-        
-    #     print("chosen: ", state_name[chosen_state])
-    #     for alphabet, next_state in gnfa["transition_function"][chosen_state].items():
-    #         print("$$",alphabet, state_name[next_state])
-    # print("-----------------------")
 
     reachable_non_dead_states = filter(lambda x: is_not_dead[x], dfa["reachable_states"])
 
     # removing states one by one gnfa["states"]:
     for chosen_state in reachable_non_dead_states:
-        # print("chosen: ", state_name[chosen_state])
-        # for alphabet, next_state in gnfa["transition_function"][chosen_state].items():
-        #     print("$$",alphabet, state_name[next_state])
-
         # for cleene star
-        for alphabet, next_state in gnfa["transition_function"][chosen_state].items():
-            if chosen_state == next_state:
-                L[chosen_state][chosen_state] = union_regex(L[chosen_state][chosen_state], alphabet)
-        # print("-> ",L[chosen_state][chosen_state])
 
-        if L[chosen_state][chosen_state] != "":
-            L[chosen_state][chosen_state] = cleene_star_regex(L[chosen_state][chosen_state])
-            # print("-#> ",L[chosen_state][chosen_state])
+        string = ""
+        for transition_string in L[chosen_state][chosen_state]:
+            string = union_regex(string, transition_string)
+        if string != "":
+            string = cleene_star_regex(string)
+            L[chosen_state][chosen_state] = [string]
 
             # for appending star with next values
             next_states =  list(gnfa["transition_function"][chosen_state].items())
             for alphabet, next_state in next_states:
+                del gnfa["transition_function"][chosen_state][alphabet]
                 if chosen_state != next_state:
-                    # print("-2> ",L[chosen_state][next_state])
-                    L[chosen_state][next_state] = concat_regex(L[chosen_state][chosen_state], L[chosen_state][next_state])
-                    # print("-3> ",L[chosen_state][next_state])
-                    del gnfa["transition_function"][chosen_state][alphabet]
-                    gnfa["transition_function"][chosen_state][L[chosen_state][next_state]] = next_state
-                else:
-                    del gnfa["transition_function"][chosen_state][alphabet]
+                    for ind in range(len(L[chosen_state][next_state])):
+                        L[chosen_state][next_state][ind] = concat_regex(string, L[chosen_state][next_state][ind])
+                        gnfa["transition_function"][chosen_state][L[chosen_state][next_state][ind]] = next_state
                     
-
         # concatenating prev state of chosen state to next states of chosen state
         for prev_state in gnfa["states"]:
-            # print("States: ", state_name[prev_state], state_name[chosen_state])
             if prev_state != chosen_state:
                 prev_next_states = list(gnfa["transition_function"][prev_state].items())
-
-                # for alphabet, next_state in prev_next_states:
-                #     print(alphabet, state_name[next_state])
+                
                 for alphabet, next_state in prev_next_states:
                     if next_state == chosen_state:
-                        # L[prev_state][chosen_state] = alphabet
                         # connecting prev_state to next of chosen
-                        new_strings = []
+                        all_new_strings = []
                         for chosen_state_alphabet, chosen_next_state in gnfa["transition_function"][chosen_state].items():
-                            # print("-##> ",L[prev_state][chosen_state], L[chosen_state][chosen_next_state] )
-                            # print("-##2> ",L[prev_state][chosen_next_state] )
-                            L[prev_state][chosen_next_state] = concat_regex(L[prev_state][chosen_state] , L[chosen_state][chosen_next_state])
-                            # print("-##3> ", state_name[prev_state], L[prev_state][chosen_next_state], state_name[chosen_next_state] )
-                            gnfa["transition_function"][prev_state][L[prev_state][chosen_next_state]] = chosen_next_state
-                            new_strings.append(L[prev_state][chosen_next_state])
-                        if alphabet not in new_strings:
-                            del gnfa["transition_function"][prev_state][alphabet]
+                            new_strings = []
+                            for prev_to_chosen in L[prev_state][chosen_state]:
+                                chosen_to_next = chosen_state_alphabet
+                                string = concat_regex(prev_to_chosen, chosen_to_next)
+                                gnfa["transition_function"][prev_state][string] = chosen_next_state
+                                new_strings.append(string)
+                                all_new_strings.append(string)
 
-    return L[gnfa["initial_state"]][gnfa["final_states"][0]]
+                            L[prev_state][chosen_next_state].extend(new_strings)
+                        if alphabet not in all_new_strings:
+                            del gnfa["transition_function"][prev_state][alphabet]
+    regex = ""
+    for transition_string in L[gnfa["initial_state"]][gnfa["final_states"][0]]:
+        regex = union_regex(regex, transition_string)
+    regex = bracket(regex)
+    return regex
 
 if __name__=="__main__":
-    reg_exp = "a(a+b)*b"
-    reg_exp = "ab"
+    # reg_exp = "a(a+b)*b"
+    # reg_exp = "ab"
     # reg_exp = "(a+ab)(a+ab)*"
     reg_exp = "(a+b)*b"
     # reg_exp = "a+(a+b)*a"
